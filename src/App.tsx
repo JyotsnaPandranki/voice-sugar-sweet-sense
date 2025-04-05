@@ -9,6 +9,8 @@ import RecordPage from "./pages/RecordPage";
 import HistoryPage from "./pages/HistoryPage";
 import LearnPage from "./pages/LearnPage";
 import ProfilePage from "./pages/ProfilePage";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 import Header from "./components/Header";
 
@@ -59,6 +61,22 @@ const App = () => (
             element={
               <Layout>
                 <ProfilePage />
+              </Layout>
+            } 
+          />
+          <Route 
+            path="/privacy-policy" 
+            element={
+              <Layout>
+                <PrivacyPolicy />
+              </Layout>
+            } 
+          />
+          <Route 
+            path="/terms-of-service" 
+            element={
+              <Layout>
+                <TermsOfService />
               </Layout>
             } 
           />

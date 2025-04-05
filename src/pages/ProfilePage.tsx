@@ -5,8 +5,11 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Download, Shield, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const ProfilePage = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="container max-w-md mx-auto py-6 px-4">
       <div className="flex items-center justify-between mb-6">
@@ -38,10 +41,18 @@ const ProfilePage = () => {
           </p>
           
           <div className="flex gap-4">
-            <Button variant="outline" className="w-full text-xs">
+            <Button 
+              variant="outline" 
+              className="w-full text-xs"
+              onClick={() => navigate('/privacy-policy')}
+            >
               Privacy Policy
             </Button>
-            <Button variant="outline" className="w-full text-xs">
+            <Button 
+              variant="outline" 
+              className="w-full text-xs"
+              onClick={() => navigate('/terms-of-service')}
+            >
               Terms of Service
             </Button>
           </div>
