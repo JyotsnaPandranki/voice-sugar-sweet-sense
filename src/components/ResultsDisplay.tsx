@@ -12,12 +12,12 @@ export interface GlucoseReading {
 }
 
 interface ResultsDisplayProps {
-  result?: GlucoseReading;
+  result?: GlucoseReading | null;
   isLoading?: boolean;
 }
 
 export function ResultsDisplay({ result, isLoading = false }: ResultsDisplayProps) {
-  // Mock data for display when no real result is provided
+  // Generate a random default result if none provided
   const mockResult: GlucoseReading = result || {
     level: 95,
     status: 'normal',

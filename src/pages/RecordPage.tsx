@@ -6,15 +6,41 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Info } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
+import type { GlucoseReading } from '@/components/ResultsDisplay';
 
 const RecordPage = () => {
   const [recordingComplete, setRecordingComplete] = useState(false);
   const [analyzingVoice, setAnalyzingVoice] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [glucoseResult, setGlucoseResult] = useState<GlucoseReading | null>(null);
   
   const handleRecordingComplete = (blob: Blob) => {
     setAudioBlob(blob);
     setRecordingComplete(true);
+    // Reset results when a new recording is made
+    setGlucoseResult(null);
+  };
+
+  // Generate random glucose level within realistic range
+  const generateGlucoseReading = (): GlucoseReading => {
+    // Generate random number between 60 and 200
+    const level = Math.floor(Math.random() * 140) + 60;
+    
+    // Determine status based on level
+    let status: 'low' | 'normal' | 'high' | 'unknown' = 'unknown';
+    if (level < 70) status = 'low';
+    else if (level <= 140) status = 'normal';
+    else status = 'high';
+    
+    // Random confidence between 65% and 95%
+    const confidence = Math.floor(Math.random() * 30) + 65;
+    
+    return {
+      level,
+      status,
+      confidence,
+      timestamp: new Date()
+    };
   };
 
   const analyzeRecording = () => {
@@ -28,12 +54,16 @@ const RecordPage = () => {
     }
     
     setAnalyzingVoice(true);
+    
     // Simulate API call with timeout
     setTimeout(() => {
+      const newReading = generateGlucoseReading();
+      setGlucoseResult(newReading);
       setAnalyzingVoice(false);
+      
       toast({
         title: "Analysis complete",
-        description: "Your voice recording has been analyzed successfully.",
+        description: `Your glucose level is estimated at ${newReading.level} mg/dL.`,
       });
     }, 3000);
   };
@@ -58,7 +88,7 @@ const RecordPage = () => {
         {analyzingVoice ? (
           <ResultsDisplay isLoading={true} />
         ) : (
-          recordingComplete && <ResultsDisplay />
+          recordingComplete && <ResultsDisplay result={glucoseResult} />
         )}
         
         <Card className="bg-sweetvoice-light border-none">
