@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mic, Square, PlayCircle } from 'lucide-react';
+import { Mic, Square, PlayCircle, Upload } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 interface VoiceRecorderProps {
@@ -16,7 +16,9 @@ export function VoiceRecorder({ onRecordingComplete }: VoiceRecorderProps) {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     // Clean up function
@@ -36,6 +38,7 @@ export function VoiceRecorder({ onRecordingComplete }: VoiceRecorderProps) {
   const startRecording = async () => {
     setAudioChunks([]);
     setAudioURL(null);
+    setFileName(null);
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -74,6 +77,7 @@ export function VoiceRecorder({ onRecordingComplete }: VoiceRecorderProps) {
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
         setAudioChunks(chunks);
+        setFileName('Recording.wav');
         onRecordingComplete(audioBlob);
       };
       
@@ -111,6 +115,45 @@ export function VoiceRecorder({ onRecordingComplete }: VoiceRecorderProps) {
           setIsPlaying(false);
         };
       }
+    }
+  };
+
+  const browseFiles = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check if the file is an audio file
+      if (!file.type.startsWith('audio/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select an audio file.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result instanceof ArrayBuffer) {
+          const blob = new Blob([e.target.result], { type: file.type });
+          const url = URL.createObjectURL(blob);
+          
+          // Clean up previous URL if it exists
+          if (audioURL) {
+            URL.revokeObjectURL(audioURL);
+          }
+          
+          setAudioURL(url);
+          setFileName(file.name);
+          onRecordingComplete(blob);
+        }
+      };
+      reader.readAsArrayBuffer(file);
     }
   };
 
@@ -155,10 +198,16 @@ export function VoiceRecorder({ onRecordingComplete }: VoiceRecorderProps) {
           </div>
           
           <div className="space-y-3 w-full">
+            {fileName && (
+              <div className="text-center text-sm bg-sweetvoice-light p-2 rounded-md text-sweetvoice-dark">
+                Selected file: {fileName}
+              </div>
+            )}
+            
             <div className="text-center text-lg font-medium text-sweetvoice-dark">
               {isRecording ? "Recording your voice..." : 
                 audioURL ? "Ready to analyze your voice" : 
-                "Tap to record your voice"}
+                "Record or select an audio file"}
             </div>
             
             <div className="text-center text-sm text-muted-foreground mb-4">
@@ -167,7 +216,7 @@ export function VoiceRecorder({ onRecordingComplete }: VoiceRecorderProps) {
                 "The recording will be used to analyze your glucose patterns"}
             </div>
             
-            <div className="flex justify-center gap-4">
+            <div className="flex flex-wrap justify-center gap-4">
               {isRecording ? (
                 <Button 
                   variant="destructive" 
@@ -198,14 +247,31 @@ export function VoiceRecorder({ onRecordingComplete }: VoiceRecorderProps) {
                       </Button>
                     </>
                   ) : (
-                    <Button 
-                      variant="default" 
-                      size="lg" 
-                      className="rounded-full px-8 bg-sweetvoice-primary hover:bg-sweetvoice-secondary"
-                      onClick={startRecording}
-                    >
-                      <Mic className="mr-2 h-4 w-4" /> Start Recording
-                    </Button>
+                    <>
+                      <Button 
+                        variant="default" 
+                        size="lg" 
+                        className="rounded-full px-8 bg-sweetvoice-primary hover:bg-sweetvoice-secondary"
+                        onClick={startRecording}
+                      >
+                        <Mic className="mr-2 h-4 w-4" /> Start Recording
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="rounded-full px-8"
+                        onClick={browseFiles}
+                      >
+                        <Upload className="mr-2 h-4 w-4" /> Browse Files
+                      </Button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="audio/*"
+                        onChange={handleFileUpload}
+                      />
+                    </>
                   )}
                 </>
               )}

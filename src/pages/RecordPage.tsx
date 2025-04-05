@@ -4,6 +4,7 @@ import VoiceRecorder from '@/components/VoiceRecorder';
 import ResultsDisplay from '@/components/ResultsDisplay';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 const RecordPage = () => {
   const [recordingComplete, setRecordingComplete] = useState(false);
@@ -13,15 +14,26 @@ const RecordPage = () => {
   const handleRecordingComplete = (blob: Blob) => {
     setAudioBlob(blob);
     setRecordingComplete(true);
-    // In a real app, we would analyze the recording here
-    // For demo purposes, we'll simulate analysis
   };
 
   const analyzeRecording = () => {
+    if (!audioBlob) {
+      toast({
+        title: "No recording available",
+        description: "Please record your voice or upload an audio file first.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setAnalyzingVoice(true);
     // Simulate API call with timeout
     setTimeout(() => {
       setAnalyzingVoice(false);
+      toast({
+        title: "Analysis complete",
+        description: "Your voice recording has been analyzed successfully.",
+      });
     }, 3000);
   };
 
@@ -46,7 +58,7 @@ const RecordPage = () => {
               <Info size={20} />
             </div>
             <div className="text-sm text-sweetvoice-dark">
-              <p>Speak naturally for 10-15 seconds for the most accurate results. Try to record in a quiet environment.</p>
+              <p>Speak naturally for 10-15 seconds for the most accurate results. Try to record in a quiet environment. You can also upload existing voice recordings.</p>
             </div>
           </CardContent>
         </Card>
