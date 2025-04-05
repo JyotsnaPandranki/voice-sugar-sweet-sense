@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,17 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// SweetVoice custom colors
+				sweetvoice: {
+					primary: '#0891B2', // teal-600
+					secondary: '#0E7490', // teal-700
+					accent: '#06B6D4', // cyan-500
+					light: '#ECFEFF', // cyan-50
+					dark: '#164E63', // cyan-900
+					success: '#10B981', // emerald-500
+					warning: '#F59E0B', // amber-500
+					danger: '#EF4444', // red-500
 				}
 			},
 			borderRadius: {
@@ -84,11 +96,26 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-recording': {
+					'0%, 100%': { transform: 'scale(1)', opacity: '1' },
+					'50%': { transform: 'scale(1.1)', opacity: '0.8' },
+				},
+				'wave': {
+					'0%': { transform: 'scaleY(1)' },
+					'50%': { transform: 'scaleY(0.5)' },
+					'100%': { transform: 'scaleY(1)' },
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-recording': 'pulse-recording 1.5s infinite',
+				'wave-1': 'wave 1.2s infinite ease-in-out',
+				'wave-2': 'wave 1.4s infinite ease-in-out 0.1s',
+				'wave-3': 'wave 1.0s infinite ease-in-out 0.2s',
+				'wave-4': 'wave 1.3s infinite ease-in-out 0.3s',
+				'wave-5': 'wave 1.1s infinite ease-in-out 0.4s',
 			}
 		}
 	},
