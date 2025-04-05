@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mic, Square, PlayCircle, Upload } from 'lucide-react';
+import { Mic, Square, PlayCircle, Upload, FileAudio } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 interface VoiceRecorderProps {
@@ -17,8 +17,10 @@ export function VoiceRecorder({ onRecordingComplete }: VoiceRecorderProps) {
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     // Clean up function
@@ -118,6 +120,24 @@ export function VoiceRecorder({ onRecordingComplete }: VoiceRecorderProps) {
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = () => {
+    setDragActive(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  };
+
   const browseFiles = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -127,34 +147,53 @@ export function VoiceRecorder({ onRecordingComplete }: VoiceRecorderProps) {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Check if the file is an audio file
-      if (!file.type.startsWith('audio/')) {
-        toast({
-          title: "Invalid file type",
-          description: "Please select an audio file.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result instanceof ArrayBuffer) {
-          const blob = new Blob([e.target.result], { type: file.type });
-          const url = URL.createObjectURL(blob);
-          
-          // Clean up previous URL if it exists
-          if (audioURL) {
-            URL.revokeObjectURL(audioURL);
-          }
-          
-          setAudioURL(url);
-          setFileName(file.name);
-          onRecordingComplete(blob);
-        }
-      };
-      reader.readAsArrayBuffer(file);
+      handleFile(file);
     }
+  };
+
+  const handleFile = (file: File) => {
+    // Check if the file is an audio file
+    if (!file.type.startsWith('audio/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an audio file.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an audio file smaller than 5MB.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result instanceof ArrayBuffer) {
+        const blob = new Blob([e.target.result], { type: file.type });
+        const url = URL.createObjectURL(blob);
+        
+        // Clean up previous URL if it exists
+        if (audioURL) {
+          URL.revokeObjectURL(audioURL);
+        }
+        
+        setAudioURL(url);
+        setFileName(file.name);
+        onRecordingComplete(blob);
+        
+        toast({
+          title: "File uploaded",
+          description: `${file.name} has been successfully uploaded.`,
+        });
+      }
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   // Format seconds to mm:ss
@@ -168,53 +207,96 @@ export function VoiceRecorder({ onRecordingComplete }: VoiceRecorderProps) {
     <Card className="w-full shadow-md">
       <CardContent className="p-6">
         <div className="flex flex-col items-center space-y-6">
-          <div className="relative flex items-center justify-center w-32 h-32">
-            {isRecording ? (
-              <>
-                <div className={`absolute inset-0 bg-sweetvoice-primary rounded-full opacity-20 animate-pulse-recording`}></div>
-                <div className="voice-wave-container absolute inset-0 flex items-center justify-center">
-                  <div className="voice-wave-bar h-8 animate-wave-1"></div>
-                  <div className="voice-wave-bar h-16 animate-wave-2"></div>
-                  <div className="voice-wave-bar h-24 animate-wave-3"></div>
-                  <div className="voice-wave-bar h-16 animate-wave-4"></div>
-                  <div className="voice-wave-bar h-8 animate-wave-5"></div>
-                </div>
-                <div className="absolute flex items-center justify-center w-24 h-24 bg-sweetvoice-primary text-white rounded-full">
-                  <div className="text-center">
-                    <div className="text-xs mb-1">Recording</div>
-                    <div className="text-lg font-semibold">{formatTime(recordingDuration)}</div>
+          {isRecording || audioURL ? (
+            <div className="relative flex items-center justify-center w-32 h-32">
+              {isRecording ? (
+                <>
+                  <div className={`absolute inset-0 bg-sweetvoice-primary rounded-full opacity-20 animate-pulse-recording`}></div>
+                  <div className="voice-wave-container absolute inset-0 flex items-center justify-center">
+                    <div className="voice-wave-bar h-8 animate-wave-1"></div>
+                    <div className="voice-wave-bar h-16 animate-wave-2"></div>
+                    <div className="voice-wave-bar h-24 animate-wave-3"></div>
+                    <div className="voice-wave-bar h-16 animate-wave-4"></div>
+                    <div className="voice-wave-bar h-8 animate-wave-5"></div>
                   </div>
-                </div>
-              </>
-            ) : (
-              <div className={`w-24 h-24 rounded-full flex items-center justify-center ${audioURL ? 'bg-sweetvoice-accent' : 'bg-sweetvoice-primary'} text-white`}>
-                {audioURL ? (
+                  <div className="absolute flex items-center justify-center w-24 h-24 bg-sweetvoice-primary text-white rounded-full">
+                    <div className="text-center">
+                      <div className="text-xs mb-1">Recording</div>
+                      <div className="text-lg font-semibold">{formatTime(recordingDuration)}</div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div 
+                  className={`w-24 h-24 rounded-full flex items-center justify-center ${audioURL ? 'bg-sweetvoice-accent' : 'bg-sweetvoice-primary'} text-white cursor-pointer`}
+                  onClick={playRecording}
+                >
                   <PlayCircle className="h-12 w-12" />
-                ) : (
-                  <Mic className="h-12 w-12" />
-                )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center space-y-4 w-full">
+              <h2 className="text-xl font-semibold text-sweetvoice-dark">Upload Audio File</h2>
+              <p className="text-sm text-center text-muted-foreground">
+                Upload a pre-recorded voice sample in WAV or MP3 format for analysis.
+              </p>
+              <div 
+                ref={uploadContainerRef}
+                className={`w-full border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer transition-colors ${
+                  dragActive ? 'border-sweetvoice-primary bg-sweetvoice-light' : 'border-gray-300 hover:border-sweetvoice-primary hover:bg-sweetvoice-light/50'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={browseFiles}
+              >
+                <Upload className="h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-center text-gray-600 font-medium mb-1">
+                  Click to upload
+                </p>
+                <p className="text-center text-gray-400 text-sm">
+                  or drag and drop
+                </p>
+                <p className="text-center text-gray-400 text-xs mt-2">
+                  WAV or MP3 (max. 5MB)
+                </p>
               </div>
-            )}
-          </div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="audio/*"
+                onChange={handleFileUpload}
+              />
+            </div>
+          )}
           
           <div className="space-y-3 w-full">
             {fileName && (
-              <div className="text-center text-sm bg-sweetvoice-light p-2 rounded-md text-sweetvoice-dark">
-                Selected file: {fileName}
+              <div className="flex items-center text-sm bg-sweetvoice-light p-2 rounded-md text-sweetvoice-dark">
+                <FileAudio className="h-4 w-4 mr-2" />
+                <span className="truncate">{fileName}</span>
               </div>
             )}
             
-            <div className="text-center text-lg font-medium text-sweetvoice-dark">
-              {isRecording ? "Recording your voice..." : 
-                audioURL ? "Ready to analyze your voice" : 
-                "Record or select an audio file"}
-            </div>
+            {isRecording || audioURL ? (
+              <div className="text-center text-lg font-medium text-sweetvoice-dark">
+                {isRecording ? "Recording your voice..." : 
+                  audioURL ? "Ready to analyze your voice" : 
+                  "Record or select an audio file"}
+              </div>
+            ) : null}
             
-            <div className="text-center text-sm text-muted-foreground mb-4">
-              {isRecording ? "Please speak clearly for 10-15 seconds" : 
-                audioURL ? "You can replay your recording or analyze it" : 
-                "The recording will be used to analyze your glucose patterns"}
-            </div>
+            {isRecording ? (
+              <div className="text-center text-sm text-muted-foreground mb-4">
+                Please speak clearly for 10-15 seconds
+              </div>
+            ) : audioURL ? (
+              <div className="text-center text-sm text-muted-foreground mb-4">
+                You can replay your recording or analyze it
+              </div>
+            ) : null}
             
             <div className="flex flex-wrap justify-center gap-4">
               {isRecording ? (
@@ -229,49 +311,23 @@ export function VoiceRecorder({ onRecordingComplete }: VoiceRecorderProps) {
               ) : (
                 <>
                   {audioURL ? (
-                    <>
-                      <Button 
-                        variant="outline" 
-                        size="lg" 
-                        className="rounded-full px-8" 
-                        onClick={playRecording}
-                      >
-                        <PlayCircle className="mr-2 h-4 w-4" /> {isPlaying ? "Pause" : "Play"}
-                      </Button>
-                      <Button 
-                        variant="default" 
-                        size="lg" 
-                        className="rounded-full px-8 bg-sweetvoice-primary hover:bg-sweetvoice-secondary"
-                      >
-                        Analyze Voice
-                      </Button>
-                    </>
+                    <Button 
+                      variant="outline" 
+                      size="lg" 
+                      className="rounded-full px-8" 
+                      onClick={playRecording}
+                    >
+                      <PlayCircle className="mr-2 h-4 w-4" /> {isPlaying ? "Pause" : "Play"}
+                    </Button>
                   ) : (
-                    <>
-                      <Button 
-                        variant="default" 
-                        size="lg" 
-                        className="rounded-full px-8 bg-sweetvoice-primary hover:bg-sweetvoice-secondary"
-                        onClick={startRecording}
-                      >
-                        <Mic className="mr-2 h-4 w-4" /> Start Recording
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        className="rounded-full px-8"
-                        onClick={browseFiles}
-                      >
-                        <Upload className="mr-2 h-4 w-4" /> Browse Files
-                      </Button>
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        className="hidden"
-                        accept="audio/*"
-                        onChange={handleFileUpload}
-                      />
-                    </>
+                    <Button 
+                      variant="default" 
+                      size="lg" 
+                      className="rounded-full px-8 bg-sweetvoice-primary hover:bg-sweetvoice-secondary"
+                      onClick={startRecording}
+                    >
+                      <Mic className="mr-2 h-4 w-4" /> Start Recording
+                    </Button>
                   )}
                 </>
               )}

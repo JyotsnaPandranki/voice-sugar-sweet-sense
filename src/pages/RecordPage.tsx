@@ -5,6 +5,7 @@ import ResultsDisplay from '@/components/ResultsDisplay';
 import { Card, CardContent } from '@/components/ui/card';
 import { Info } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
 
 const RecordPage = () => {
   const [recordingComplete, setRecordingComplete] = useState(false);
@@ -44,12 +45,20 @@ const RecordPage = () => {
       <div className="space-y-6">
         <VoiceRecorder onRecordingComplete={handleRecordingComplete} />
         
-        {recordingComplete && (
-          analyzingVoice ? (
-            <ResultsDisplay isLoading={true} />
-          ) : (
-            <ResultsDisplay />
-          )
+        {recordingComplete && !analyzingVoice && (
+          <Button 
+            onClick={analyzeRecording} 
+            className="w-full bg-sweetvoice-primary hover:bg-sweetvoice-secondary text-white"
+            size="lg"
+          >
+            Analyze Voice
+          </Button>
+        )}
+        
+        {analyzingVoice ? (
+          <ResultsDisplay isLoading={true} />
+        ) : (
+          recordingComplete && <ResultsDisplay />
         )}
         
         <Card className="bg-sweetvoice-light border-none">
